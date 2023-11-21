@@ -74,19 +74,29 @@ func main() {
 	ListObjectsInput := s3.ListObjectsV2Input{
 		Bucket: S3Bucket.BucketName,
 	}
+	
+	objectCount := int32(0)
+	
+	for true {
+		S3ListOfObjects, s3err := S3Bucket.S3Client.ListObjectsV2(ctx, &ListObjectsInput)
+		objectCount += *S3ListOfObjects.KeyCount
+		if s3err != nil {
+			log.Printf("Couldn't get list of object(s) from S3: %v. Here's why: %v\n", S3Bucket.BucketName, err)
+		}
 
-	S3ListOfObjects, s3err := S3Bucket.S3Client.ListObjectsV2(ctx, &ListObjectsInput)
-
-	if s3err != nil {
-		log.Printf("Couldn't get list of object(s) from S3: %v. Here's why: %v\n", S3Bucket.BucketName, err)
-	}
-
-	err = ChangeStorageClass(ctx,S3Bucket, S3ListOfObjects, *s3SourceClass, *s3DestinationClass)
-
-	if err != nil {
-		log.Printf("Couldn't convert object(s) in S3: %v. Here's why: %v\n", S3Bucket.BucketName, err)
-	} else {
-		log.Printf("Conversion of object(s) in S3 has been finished")
+		err = ChangeStorageClass(ctx, S3Bucket, S3ListOfObjects, *s3SourceClass, *s3DestinationClass)
+		if err != nil {
+			log.Printf("Couldn't convert object(s) in S3: %v. Here's why: %v\n", S3Bucket.BucketName, err)
+		} else {
+			log.Printf("Conversion of [%v] object(s) in S3 has been completed. Total number of processed objects: [%v].",*S3ListOfObjects.KeyCount,objectCount )
+		}
+		if *S3ListOfObjects.IsTruncated {
+			ListObjectsInput.ContinuationToken = S3ListOfObjects.NextContinuationToken
+		} else {
+			log.Printf("Conversion of All the object(s) in S3 has been finished")
+			break
+		}
+		
 	}
 
 	// fmt.Println(ListObjectsInput)

@@ -28,7 +28,7 @@ func ChangeStorageClass(ctx context.Context, S3Bucket S3BucketObject, S3ListOfOb
 	for _, Object := range S3ListOfObjects.Contents {
 		//	log.Printf("Object [%v] of Storage Class [%v] and we are looking for [%v]\n", *Object.Key, Object.StorageClass,types.ObjectStorageClass(s3SourceClass))
 		if Object.StorageClass == types.ObjectStorageClass(s3SourceClass) {
-			log.Printf("Found Object [%v] of as Storage Class [%v]\n", *Object.Key, Object.StorageClass)
+			log.Printf("Found Object [%v] of as Storage Class [%v]. Converting Storage Class to [%v] \n", *Object.Key, Object.StorageClass,s3DestinationClass)
 			CopySource := *S3Bucket.BucketName + "/"  + *Object.Key
 			PutObjectUpdate := s3.CopyObjectInput {
 				Bucket:      S3ListOfObjects.Name,
