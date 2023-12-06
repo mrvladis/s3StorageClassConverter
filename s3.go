@@ -24,18 +24,19 @@ func (S3Bucket S3BucketObject) BucketExit(ctx context.Context) (bool, error) {
 	return exists, err
 }
 
-func ChangeStorageClass(ctx context.Context, S3Bucket S3BucketObject, S3ListOfObjects *s3.ListObjectsV2Output, s3SourceClass string, s3DestinationClass string) error {
+func ChangeStorageClass(ctx context.Context, S3Bucket S3BucketObject, S3ListOfObjects *s3.ListObjectsV2Output, s3SourceClass string, s3DestinationClass string, wgWithCount *WaitGroupCount) error {
+
 	for _, Object := range S3ListOfObjects.Contents {
 		//	log.Printf("Object [%v] of Storage Class [%v] and we are looking for [%v]\n", *Object.Key, Object.StorageClass,types.ObjectStorageClass(s3SourceClass))
 		if Object.StorageClass == types.ObjectStorageClass(s3SourceClass) {
-			log.Printf("Found Object [%v] of as Storage Class [%v]. Converting Storage Class to [%v] \n", *Object.Key, Object.StorageClass,s3DestinationClass)
-			CopySource := *S3Bucket.BucketName + "/"  + *Object.Key
-			PutObjectUpdate := s3.CopyObjectInput {
-				Bucket:      S3ListOfObjects.Name,
-				Key:         Object.Key,
-				CopySource:  &CopySource,
+			// log.Printf("Found Object [%v] of as Storage Class [%v]. Converting Storage Class to [%v] \n", *Object.Key, Object.StorageClass,s3DestinationClass)
+			CopySource := *S3Bucket.BucketName + "/" + *Object.Key
+			PutObjectUpdate := s3.CopyObjectInput{
+				Bucket:       S3ListOfObjects.Name,
+				Key:          Object.Key,
+				CopySource:   &CopySource,
 				StorageClass: types.StorageClass(s3DestinationClass),
-			 }
+			}
 			_, err := S3Bucket.S3Client.CopyObject(ctx, &PutObjectUpdate)
 			if err != nil {
 				log.Printf("Couldn't update Storage Class of object [%v]. Here's why: %v\n", *Object.Key, err)
@@ -53,7 +54,6 @@ func ChangeStorageClass(ctx context.Context, S3Bucket S3BucketObject, S3ListOfOb
 }
 
 func isStorageClassCorrect(s3StorageClass types.ObjectStorageClass) bool {
-
 	for _, Class := range s3SourceStorageClass.Values() {
 		if Class == s3StorageClass {
 			log.Printf("Found Storage Class [%v] in the list of the Available Storage Class [%v]\n", s3StorageClass, Class)
